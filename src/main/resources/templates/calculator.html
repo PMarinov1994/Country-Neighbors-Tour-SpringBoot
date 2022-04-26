@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+	<head lang="en">
+		<title>Spring Data REST</title>
+		<meta charset="utf-8"/>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+		<meta name="viewport" content="width=device-width"/>
+		<base href="/"/>
+		<script src="https://accounts.google.com/gsi/client" async defer></script>
+		<script type="text/javascript" src="/webjars/js-cookie/js.cookie.js"></script>
+		
+		<script type="text/javascript" src="/webjars/jquery/jquery.min.js"></script>
+		<script type="text/javascript" src="/webjars/bootstrap/js/bootstrap.min.js"></script>
+		
+		<style type="text/css">
+			pre {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
+			.string { color: green; }
+			.number { color: darkorange; }
+			.boolean { color: blue; }
+			.null { color: magenta; }
+			.key { color: red; }
+			
+			.element {
+				margin: 10px;
+				float: left;
+				height: 100%;
+			}
+			
+			#body {
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="element">
+			<form id="calcForm">
+				<label for="startingCountryCode">Starting country code:</label><br>
+				<input type="text" id="startingCountryCode" name="homeCountry"><br><br>
+				
+				<label for="budgetPerCountry">Budget per country:</label><br>
+				<input type="text" id="budgetPerCountry" name="budgetPerCountry"><br><br>
+				
+				<label for="totalBudget">Total budget:</label><br>
+				<input type="text" id="totalBudget" name="totalBudget"><br><br>
+				
+				<label for="inputCurrency">Currency code:</label><br>
+				<input type="text" id="inputCurrency" name="inputCurrency"><br><br>
+				
+			</form>
+			<button id="submit">GO</button>
+			<button id="logout">Logout</button>
+		</div>
+		<div class="element" style="white-space: pre-wrap; white-space: -moz-pre-wrap; white-space: -pre-wrap; white-space: -o-pre-wrap; word-wrap: break-word;" id="result"></div>
+	</body>
+	<script>
+		logout.onclick = async (e) => {
+
+			await fetch("http://localhost:8080/logout", {
+				credentials: 'include',
+				method: 'POST',
+				headers : {
+					"X-XSRF-TOKEN" : Cookies.get('XSRF-TOKEN'),
+				},
+			});
+
+			window.location.replace("http://localhost:8080")
+		}
+	
+		submit.onclick = async (e) => {
+
+			var form = document.querySelector("#calcForm");
+			data = {
+				homeCountry : form.querySelector('input[name="homeCountry"]').value,
+				budgetPerCountry : form.querySelector('input[name="budgetPerCountry"]').value,
+				totalBudget : form.querySelector('input[name="totalBudget"]').value,
+				inputCurrency : form.querySelector('input[name="inputCurrency"]').value,
+			}
+		
+			let responce = await fetch("http://localhost:8080/calculateTour", {
+				credentials: 'include',
+				method: 'POST',
+			    headers: {
+					'Content-Type': 'application/json',
+					"X-XSRF-TOKEN" : Cookies.get('XSRF-TOKEN'),
+				},
+				body: JSON.stringify(data),
+			})
+			
+			try {
+				let text = await responce.json();				
+				let formatedText = JSON.stringify(text, null, 4);
+				document.querySelector("#result").innerHTML = "JSON Result:\n" + syntaxHighlight(formatedText);
+			} catch (error) {
+				document.querySelector("#result").innerHTML = "An error occured! Check your input.";
+			}
+		}
+		
+		
+		function syntaxHighlight(json) {
+			json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+			return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+				var cls = 'number';
+				if (/^"/.test(match)) {
+					if (/:$/.test(match)) {
+						cls = 'key';
+					} else {
+						cls = 'string';
+					}
+				} else if (/true|false/.test(match)) {
+					cls = 'boolean';
+				} else if (/null/.test(match)) {
+					cls = 'null';
+				}
+				return '<span class="' + cls + '">' + match + '</span>';
+			});
+		}
+		
+	</script>
+</html>
